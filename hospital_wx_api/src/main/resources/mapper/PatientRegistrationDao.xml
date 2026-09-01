@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.wx.dao.PatientRegistrationDao">
+
+    <!--查询当天患者挂号次数-->
+    <select id="getTodayRegistrationCount" parameterType="Map" resultType="long">
+        SELECT COUNT(1)
+        FROM medical_registration r
+        JOIN patient_user_info c ON r.patient_card_id = c.id
+        WHERE c.user_id = #{userId}
+          AND STR_TO_DATE(r.create_time, '%Y-%m-%d') = #{today}
+    </select>
+
+    <!--检查当天是否已经挂过该门诊的号-->
+    <select id="hasRegisteredToday" parameterType="Map" resultType="Integer">
+        SELECT r.id
+        FROM medical_registration r
+                 JOIN patient_user_info c ON r.patient_card_id = c.id
+        WHERE c.user_id = #{userId}
+          AND date = STR_TO_DATE('${date}', '%Y-%m-%d')
+          AND dept_sub_id = #{deptSubId}
+          AND payment_status != 3
+    </select>
+
+    <!--  保存挂号记录  -->
+    <insert id="insert" parameterType="com.hospital.wx.pojo.PatientRegistration">
+        INSERT INTO medical_registration
+        (patient_card_id, work_plan_id, `doctor_schedule_id`,
+         doctor_id,dept_sub_id,`date`,
+         slot, amount, out_trade_no,prepay_id,payment_status)
+        values (
+                   #{patientCardId}, #{workPlanId}, #{doctorScheduleId},
+                   #{doctorId}, #{deptSubId},#{date},
+                   #{slot}, #{amount},#{outTradeNo},#{prepayId},1)
+    </insert>
+
+    <!--  关闭未付款的订单号。  -->
+    <update id="closeUnpaidOrder" parameterType="String">
+        UPDATE medical_registration
+        SET payment_status = 4
+        WHERE out_trade_no = #{outTradeNo}
+          AND payment_status = 1
+    </update>
+
+    <!-- 查询挂号单的 workPlanId 和 doctorScheduleId  -->
+    <select id="selectWorkPlanIdAndScheduleId" parameterType="String" resultType="HashMap">
+        SELECT doctor_schedule_id AS doctorScheduleId,
+               work_plan_id AS workPlanId
+        FROM medical_registration
+        WHERE out_trade_no = #{outTradeNo}
+    </select>
+
+    <!-- 查询挂号单列表分页记录的SQL语句 -->
+    <select id="selectRegistrationCount" parameterType="map" resultType="long">
+        SELECT COUNT(1)
+        FROM medical_registration r
+                 JOIN patient_user_info c ON r.patient_card_id = c.id
+        WHERE c.user_id = #{userId}
+    </select>
+
+    <!-- 查询挂号单列表分页记录的SQL语句 -->
+    <select id="selectRegistrationByPage" parameterType="map" resultType="hashmap">
+        SELECT
+            r.id AS id,
+            r.date AS date,
+        r.slot AS slot,
+        s.name AS name,
+        s.location AS location,
+        d.job AS job,
+        r.out_trade_no AS outTradeNo,
+        r.prepay_id AS prepayId,
+        r.transaction_id AS transactionId,
+        r.payment_status AS paymentStatus
+        FROM medical_registration r
+            JOIN patient_user_info c ON r.patient_card_id = c.id
+            JOIN medical_dept_sub s ON r.dept_sub_id = s.id
+            JOIN doctor d ON d.id = r.doctor_id
+        WHERE c.user_id = #{userId}
+        ORDER BY r.date DESC
+            LIMIT #{length} OFFSET #{start}
+    </select>
+
+    <select id="selectRegistrationInfo" parameterType="map" resultType="hashmap">
+        SELECT
+            r.id AS id,
+            r.date AS date,
+            r.slot AS slot,
+            c.name AS patientName,
+            s.name AS subDeptName,
+            d.name AS doctorName,
+            s.location AS location,
+            d.job AS job,
+            r.out_trade_no AS outTradeNo,
+            FORMAT(r.amount, 2) AS amount,
+            r.payment_status AS paymentStatus
+        FROM medical_registration r
+            JOIN patient_user_info c ON r.patient_card_id = c.id
+            JOIN medical_dept_sub s ON r.dept_sub_id = s.id
+            JOIN doctor d ON d.id = r.doctor_id
+        WHERE r.id = #{id}
+          AND c.user_id = #{userId}
+    </select>
+
+    <!--查询挂号单金额和患者openId，用于创建支付单
+    TO_CHAR(r."amount", 'FM999999999.00') 确保金额始终保留两位小数，而不会在整数时省略 .00。
+    -->
+    <select id="searchRepayInfo" parameterType="Map" resultType="HashMap">
+        SELECT u."open_id" AS "openId",
+               TO_CHAR(r."amount", 'FM999999999.00') AS "amount"
+        FROM medical_registration r
+                 JOIN patient_user_info c ON r."patient_card_id" = c."id"
+                 JOIN patient_user u ON u."id" = c."user_id"
+        WHERE r."id" = #{id}
+          AND c."user_id" = #{userId}
+    </select>
+
+    <update id="updateRepayInfo" parameterType="Map">
+        UPDATE medical_registration
+        SET `out_trade_no` = #{outTradeNo},
+            `prepay_id` = #{prepayId}
+        WHERE `id` = #{id}
+    </update>
+
+    <!--
+        更新付款状态
+    -->
+    <update id="updatePaymentStatus" parameterType="Map">
+        UPDATE medical_registration
+        SET
+            transaction_id = #{transactionId},
+            payment_status = #{payment_status}
+        WHERE out_trade_no = #{outTradeNo}
+    </update>
+
+    <select id="getDoctorScheduleIdByOutTradeNo" parameterType="String" resultType="HashMap">
+        SELECT doctor_schedule_id AS doctorScheduleId
+        FROM medical_registration
+        WHERE out_trade_no = #{outTradeNo}
+    </select>
+
+
+
+
+</mapper>

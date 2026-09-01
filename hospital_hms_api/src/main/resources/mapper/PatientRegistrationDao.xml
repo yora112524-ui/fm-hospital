@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.hms.dao.PatientRegistrationDao">
+
+    <!--检查当天用户是否已经挂号3次以上-->
+    <select id="selectRegistrationCountInToday" parameterType="Map" resultType="long">
+        SELECT COUNT(1)
+        FROM medical_registration r
+        JOIN patient_user_info c ON r.patient_card_id = c.id
+        WHERE c.user_id = #{userId}
+          AND STR_TO_DATE(r.create_time, '%Y-%m-%d') = #{today}
+    </select>
+
+    <!--检查当天是否已经挂过该门诊的号-->
+    <select id="existsRegisterRecordInDay" parameterType="Map" resultType="Integer">
+        SELECT r.id
+        FROM medical_registration r
+                 JOIN patient_user_info c ON r.patient_card_id = c.id
+        WHERE c.user_id = #{userId}
+          AND date = STR_TO_DATE('${date}', '%Y-%m-%d')
+          AND dept_sub_id = ${deptSubId}
+          AND payment_status != 3
+    </select>
+
+    <!--  保存挂号记录  -->
+    <insert id="insert" parameterType="com.hospital.hms.pojo.PatientRegistration">
+        INSERT INTO medical_registration
+        (patient_card_id, work_plan_id, `doctor_schedule_id`,
+         doctor_id,dept_sub_id,`date`,
+         slot, amount, out_trade_no,prepay_id,payment_status)
+        values (
+                   #{patientCardId}, #{workPlanId}, #{doctorScheduleId},
+                   #{doctorId}, #{deptSubId},#{date},
+                   #{slot}, #{amount},#{outTradeNo},#{prepayId},1)
+    </insert>
+
+    <!--  超过15分钟未付款的订单修改为已过期状态，关闭未付款的挂号单（4状态）  -->
+    <update id="cancelUnpaidAppointments" parameterType="String">
+        UPDATE medical_registration
+        SET payment_status = 4
+        WHERE out_trade_no = #{outTradeNo} AND payment_status = 1;
+    </update>
+
+    <!-- 查询挂号单的 workPlanId 和 doctorScheduleId  -->
+    <select id="selectWorkPlanIdAndScheduleId" parameterType="String" resultType="HashMap">
+        SELECT doctor_schedule_id AS doctorScheduleId,
+               work_plan_id AS workPlanId
+        FROM medical_registration
+        WHERE out_trade_no = #{outTradeNo}
+    </select>
+
+
+
+</mapper>

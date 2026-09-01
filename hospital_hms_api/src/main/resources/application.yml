@@ -1,0 +1,121 @@
+server:
+  port: 9091
+  servlet:
+    context-path: /hms
+    multipart:
+      max-request-size: 10MB
+      max-file-size: 2MB
+  tomcat:
+    max-connections: 10
+    accept-count: 100
+    threads:
+      max: 200
+
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:fm_hospital}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false
+      username: ${DB_USERNAME:root}
+      password: ${DB_PASSWORD:}
+      initial-size: 2
+      max-active: 4
+      min-idle: 4
+      max-wait: 60000
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+  redis:
+    database: 0
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    jedis:
+      pool:
+        max-active: 1000
+        max-wait: -1ms
+        max-idle: 16
+        min-idle: 8
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+#    virtual-host: myVH
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    # 开启 producer -> exchange 的 publisher confirm 机制。
+    # correlated 表示为每条消息保留关联信息，便于通过 CorrelationData 获取确认结果。
+    publisher-confirm-type: correlated
+    # 开启 return 机制,用于判断 exchange -> queue 路由是否失败
+    publisher-returns: true
+    template:
+      # 开启 mandatory 后，如果消息没有被任何队列接收，Broker 会把消息退回给生产者。
+      mandatory: true
+  quartz:
+    job-store-type: memory
+
+  sa-token:
+    # token名称 (同时也是cookie名称)
+    token-name: token
+    # token有效期，单位s 默认30天, -1代表永不过期
+    timeout: 2592000
+    # token临时有效期 (指定时间内无操作就视为token过期) 单位: 秒
+    activity-timeout: -1
+    # 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)
+    allow-concurrent-login: true
+    # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
+    is-share: false
+    # token风格
+    token-style: uuid
+
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: com.hospital.hms.pojo
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: info
+    com.hospital.hms.db.dao: warn
+  pattern:
+    console: "%d{yyyy/MM/dd HH:mm:ss}  %-5level  %msg%n"
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /doc-api.html
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: on
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:}
+  secret-key: ${MINIO_SECRET_KEY:}
+  bucket-name: ${MINIO_BUCKET:hospital}
+
+wechat:
+  app-id: ${WECHAT_APP_ID:}
+  app-secret: ${WECHAT_APP_SECRET:}
+  pay:
+    v3:
+      patient-wx-api:
+        app-id: ${WECHAT_PAY_APP_ID:}
+        app-v3-secret: ${WECHAT_PAY_V3_SECRET:}
+        mch-id: ${WECHAT_PAY_MCH_ID:}
+        domain: ${WECHAT_PAY_DOMAIN:}
+        cert-path: ${WECHAT_PAY_CERT_PATH:}
+
+tencent:
+  cloud:
+    appId: ${TENCENT_CLOUD_APP_ID:}
+    secretId: ${TENCENT_CLOUD_SECRET_ID:}
+    secretKey: ${TENCENT_CLOUD_SECRET_KEY:}
+    face:
+      groupName: ${TENCENT_FACE_GROUP:hospital}
+      region: ${TENCENT_FACE_REGION:ap-guangzhou}
+  trtc:
+    appId: ${TENCENT_TRTC_APP_ID:}
+    secretKey: ${TENCENT_TRTC_SECRET_KEY:}
+    expire: 86400

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.hms.dao.DeptDao">
+
+    <select id="selectAll" resultType="HashMap">
+        SELECT id,dept_name AS deptName
+        FROM dept
+        ORDER BY id
+    </select>
+
+    <select id="selectById" parameterType="int" resultType="HashMap">
+        SELECT id,dept_name AS deptName,`tel`,`email`,`desc`
+        FROM dept
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectDeptByCondition" parameterType="HashMap" resultType="HashMap">
+        SELECT d.id,d.dept_name AS deptName,d.tel,d.email,d.desc,COUNT(u.id) AS emps
+        FROM dept d LEFT JOIN users u ON u.dept_id=d.id AND u.status=1
+        WHERE 1=1
+        <if test="deptName!=null and deptName !=''">
+            AND d.dept_name LIKE '%${deptName}%'
+        </if>
+        GROUP BY d.id
+        LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectDeptByConditionCount" parameterType="HashMap" resultType="long">
+        SELECT COUNT(1) FROM (
+            SELECT d.id
+            FROM dept d LEFT JOIN users u ON u.dept_id=d.id AND u.status=1
+            WHERE 1=1
+            <if test="deptName!=null and deptName!=''">
+                AND d.dept_name LIKE '%${deptName}%'
+            </if>
+            GROUP BY d.id
+        ) AS temp
+    </select>
+
+    <select id="selectDeptCount" parameterType="HashMap" resultType="long">
+        SELECT COUNT(*) FROM (
+        SELECT d.id
+        FROM dept d LEFT JOIN users u ON u.dept_id=d.id AND u.status=1
+        WHERE 1=1
+        <if test="deptName!=null and deptName !=''">
+            AND d.dept_name LIKE '%${deptName}%'
+        </if>
+        GROUP BY d.id
+        ) AS temp
+    </select>
+
+    <select id="selectCanDelete" resultType="boolean">
+        SELECT IF( SUM( temp.users ) > 0, FALSE, TRUE ) AS result FROM (
+        SELECT COUNT( u.id ) AS users
+        FROM dept d
+        JOIN users u ON d.id=u.dept_id
+        WHERE d.id IN
+        <foreach collection="array" open="(" separator="," close=")" item="one">
+            #{one}
+        </foreach>
+        GROUP BY d.id
+        ) temp
+    </select>
+    
+    <insert id="insert" parameterType="com.hospital.hms.pojo.User">
+        INSERT INTO dept
+        SET dept_name=#{deptName}
+        <if test="tel!=null and tel !=''">
+            ,tel=#{tel}
+        </if>
+        <if test="email!=null and email !=''">
+            ,email=#{email}
+        </if>
+        <if test="desc!=null and desc !=''">
+            ,`desc`=#{desc}
+        </if>
+    </insert>
+
+    <update id="update" parameterType="com.hospital.hms.pojo.User">
+        UPDATE dept
+        SET dept_name=#{deptName},
+            tel=#{tel},
+            email=#{email},
+            `desc`=#{desc}
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deleteDeptByIds">
+        DELETE FROM dept
+        WHERE id IN
+        <foreach collection="array" open="(" separator="," close=")" item="one">
+            #{one}
+        </foreach>
+    </delete>
+</mapper>

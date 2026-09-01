@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.wx.dao.DoctorDao">
+
+    <select id="selectConditionByPage" parameterType="Map" resultType="HashMap">
+       SELECT d.id AS id,
+            d.name AS name,
+            d.sex AS sex,
+            d.tel AS tel,
+            d.school AS school,
+            d.degree AS degree,
+            d.job AS job,
+            md.name AS deptName,
+            ds.name AS subName,
+            d.recommended AS recommended,
+            d.status AS status
+            FROM doctor d
+            JOIN medical_dept_sub_doctor sd ON sd.doctor_id = d.id
+            JOIN medical_dept_sub ds ON sd.dept_sub_id = ds.id
+            JOIN medical_dept md ON ds.dept_id = md.id
+            WHERE 1=1
+        <if test="name != null">
+            AND d.name LIKE '%${name}%'
+        </if>
+        <if test="deptId!=null">
+            AND md.id = ${deptId}
+        </if>
+        <if test="degree!=null">
+            AND d.degree = #{degree}
+        </if>
+        <if test="job!=null">
+            AND d.job = #{job}
+        </if>
+        <if test="recommended!=null">
+            AND d.recommended = ${recommended}
+        </if>
+        <if test="status!=null">
+            AND d.status = ${status}
+        </if>
+        <if test="order!=null">
+            ORDER BY md.id ${order}
+        </if>
+        LIMIT ${length} OFFSET #{start}
+    </select>
+
+    <select id="selectConditionByPageCount" parameterType="Map" resultType="long">
+        SELECT COUNT(1)
+        FROM doctor d
+        JOIN medical_dept_sub_doctor sd ON sd.doctor_id = d.id
+        JOIN medical_dept_sub ds ON sd.dept_sub_id = ds.id
+        JOIN medical_dept md ON ds.dept_id = md.id
+        WHERE 1=1
+        <if test="name != null">
+            AND d.name LIKE '%${name}%'
+        </if>
+        <if test="deptId!=null">
+            AND md.id = ${deptId}
+        </if>
+        <if test="degree!=null">
+            AND d.degree = #{degree}
+        </if>
+        <if test="job!=null">
+            AND d.job = #{job}
+        </if>
+        <if test="recommended!=null">
+            AND d.recommended = ${recommended}
+        </if>
+        <if test="status!=null">
+            AND d.status = ${status}
+        </if>
+    </select>
+
+    <!--  查询医生详细信息  -->
+    <select id="selectDoctorDetailById" parameterType="int" resultType="HashMap">
+        SELECT pid,
+               birthday,
+               uuid,
+               hiredate,
+               email,
+               remark,
+               tag,
+               address,
+               description,
+               photo
+        FROM doctor
+        WHERE id = ${id}
+    </select>
+
+    <!--  添加医生  -->
+    <insert id="insert" parameterType="com.hospital.wx.pojo.Doctor">
+        insert into doctor
+            (`name`, pid, uuid,
+             sex,birthday,school,
+             `degree`, `tel`, address,
+             email, job, remark,
+             description, hiredate, tag,
+             recommended, `status`)
+        values (
+                #{name}, #{pid}, #{uuid},
+                #{sex}, #{birthday},#{school},
+                #{degree}, #{tel},#{address},
+                #{email}, #{job},#{remark},
+                #{description}, #{hiredate},#{tag},
+                #{recommended}, #{status})
+    </insert>
+
+    <select id="selectIdByUUID" parameterType="String" resultType="Integer">
+        SELECT id
+        FROM doctor
+        WHERE uuid = #{uuid}
+    </select>
+
+    <update id="updatePicture" parameterType="Map">
+        UPDATE doctor
+        SET photo = #{photo}
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="int" resultType="HashMap">
+        SELECT d.id AS id,
+               d.name AS name,
+               d.pid AS pid,
+               d.uuid ASuuid,
+               d.sex AS sex,
+               d.birthday AS birthday,
+               d.school AS school,
+               d.degree AS degree,
+               d.tel AS tel,
+               d.address AS address,
+               d.email AS email,
+               d.job AS job,
+               d.remark AS remark,
+               d.description AS description,
+               d.hiredate AS hiredate,
+               d.tag AS tag,
+               d.recommended AS recommended,
+               d.status AS status,
+               md.name AS deptName,
+               sd.dept_sub_id AS deptSubId
+        FROM doctor d
+                 JOIN medical_dept_sub_doctor sd ON sd.doctor_id = d.id
+                 JOIN medical_dept_sub ds ON sd.dept_sub_id = ds.id
+                 JOIN medical_dept md ON ds.dept_id = md.id
+        WHERE d.id = #{id}
+    </select>
+
+    <update id="update" parameterType="HashMap">
+        update doctor
+        set `name`      = #{name},
+            pid         = #{pid},
+            sex         = #{sex},
+            birthday    = #{birthday},
+            school      = #{school},
+            `degree`    = #{degree},
+            tel         = #{tel},
+            address     = #{address},
+            email       = #{email},
+            job         = #{job},
+            remark      = #{remark},
+            description = #{description},
+            hiredate    = #{hiredate},
+            tag         = #{tag},
+            recommended = #{recommended},
+            `status`    = #{status}
+        where id = #{id}
+    </update>
+
+    <update id="deleteByIds">
+        update doctor
+        set status = 4
+        WHERE id IN
+        <foreach collection="array" open="(" item="one" separator="," close=")">
+            ${one}
+        </foreach>
+    </update>
+
+    <!--  根据诊室ID查询医生信息  -->
+    <select id="selectDoctorBySubId" parameterType="int" resultType="HashMap">
+        SELECT d.id AS id, d.name AS name
+        FROM doctor d JOIN medical_dept_sub_doctor sd ON
+            sd.doctor_id = d.id WHERE sd.dept_sub_id = ${id} AND d.status = 1
+    </select>
+
+    <select id="selectDoctorInfoById" parameterType="int" resultType="HashMap">
+        SELECT d.name AS name,
+               d.photo AS photo,
+               d.job AS job,
+               d.remark AS remark,
+               d.description AS description,
+               p.price_1 AS price
+        FROM doctor d
+                 JOIN doctor_price p ON d.id=p.doctor_id
+        WHERE d.id = #{id}
+    </select>
+
+    <select id="getDoctorDetailsForCache" parameterType="int" resultType="HashMap">
+        SELECT d.id AS doctorId,
+               d.uuid AS uuid,
+               d.name AS name,
+               d.photo AS photo,
+               d.job AS job,
+               d.description AS description,
+               d.remark AS remark,
+               md.id AS deptId,
+               md.name AS deptName,
+               ds.id AS subId,
+               ds.name AS subName,
+               FORMAT(dp.price_2, 2) AS price
+        FROM doctor d
+                 LEFT JOIN medical_dept_sub_doctor sd ON sd.doctor_id = d.id
+                 LEFT JOIN medical_dept_sub ds ON sd.dept_sub_id = ds.id
+                 LEFT JOIN medical_dept md ON md.id = ds.dept_id
+                 LEFT JOIN doctor_price dp ON dp.doctor_id = d.id
+        WHERE d.id = #{doctorId};
+    </select>
+
+
+
+</mapper>

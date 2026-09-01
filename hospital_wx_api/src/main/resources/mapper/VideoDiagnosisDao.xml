@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.wx.dao.VideoDiagnosisDao">
+
+    <!--保存挂号记录-->
+    <insert id="insert" parameterType="com.hospital.wx.pojo.VideoDiagnose">
+        INSERT INTO patient_video_diagnosis (
+            patient_card_id, doctor_id, out_trade_no, amount,
+            payment_status, prepay_id, transaction_id, expect_start,
+            expect_end, real_start, real_end, status, create_time
+        )
+        VALUES (
+                   #{patientCardId}, #{doctorId}, #{outTradeNo}, #{amount},
+                   #{paymentStatus}, #{prepayId}, NULL, STR_TO_DATE(#{expectStart}, '%Y-%m-%d %H:%i:%s'),
+                   STR_TO_DATE(#{expectEnd}, '%Y-%m-%d %H:%i:%s'), NULL, NULL, 1, CURRENT_TIMESTAMP
+               );
+    </insert>
+
+    <!--根据流水号查询主键值-->
+    <select id="selectByOutTradeNo" parameterType="String" resultType="HashMap">
+        SELECT id,doctor_id AS doctorId
+        FROM patient_video_diagnosis
+        WHERE out_trade_no = #{outTradeNo}
+    </select>
+
+    <!--根据挂号单ID，查询付款结果-->
+    <select id="selectPaymentStatus" parameterType="int" resultType="HashMap">
+        SELECT doctor_id AS doctorId,
+               payment_status AS paymentStatus
+        FROM patient_video_diagnosis
+        WHERE id = #{id}
+    </select>
+
+    <!--关闭挂号单-->
+    <update id="closePayment" parameterType="Map">
+        UPDATE patient_video_diagnosis
+        SET payment_status = 3
+        WHERE payment_status = 1
+        <if test="id != null">
+            AND id = #{id}
+        </if>
+        <if test="timer != null">
+            AND TIMESTAMPDIFF(SECOND, create_time, NOW()) >= #{timer}
+        </if>
+    </update>
+
+    <!--  根据挂号单ID查询患者信息  -->
+    <select id="selectVideoDiagnoseInfo" parameterType="int" resultType="HashMap">
+        SELECT vd.id AS diagnoseId,
+               pc.name AS name,
+               pc.tel AS tel,
+               pu.photo AS photo,
+               DATE_FORMAT(vd.expect_start, '%Y-%m-%d %H:%i:%s') AS expectStart,
+               DATE_FORMAT(vd.expect_end, '%Y-%m-%d %H:%i:%s') AS expectEnd,
+               vd.status AS status
+        FROM patient_video_diagnosis vd
+                 JOIN patient_user_info pc ON vd.patient_card_id = pc.id
+                 JOIN patient_user pu ON pc.user_id = pu.id
+        WHERE vd.id = #{diagnoseId}
+    </select>
+
+    <update id="updatePayment" parameterType="Map">
+        UPDATE HOSPITAL.VIDEO_DIAGNOSE
+        SET transaction_id = #{transactionId},
+            payment_status = #{paymentStatus}
+        WHERE out_trade_no = #{outTradeNo}
+    </update>
+
+    <update id="updateStatus" parameterType="HashMap">
+        UPDATE patient_video_diagnosis
+        SET status = #{status}
+        <if test="realStart != null">
+            , real_start = STR_TO_DATE(#{realStart}, '%Y-%m-%d %H:%i:%s')
+        </if>
+        <if test="realEnd != null">
+            , real_end = STR_TO_DATE(#{realEnd}, '%Y-%m-%d %H:%i:%s')
+        </if>
+        WHERE id = #{id}
+    </update>
+
+<!--    <select id="selectVideoDiagnoseInfo" parameterType="int" resultType="HashMap">-->
+<!--        SELECT vd."id"                                    AS "diagnoseId",-->
+<!--            pc."name"                                         AS "name",-->
+<!--            pc."tel"                                          AS "tel",-->
+<!--            pu."photo"                                        AS "photo",-->
+<!--            TO_CHAR(vd."expect_start", 'yyyy-MM-dd HH:mm:ss') AS "expectStart",-->
+<!--            TO_CHAR(vd."expect_end", 'yyyy-MM-dd HH:mm:ss')   AS "expectEnd",-->
+<!--            vd.status AS "status"-->
+<!--        from-->
+<!--            JOIN HOSPITAL.PATIENT_USER_INFO_CARD pc ON vd."patient_card_id" = pc."id"-->
+<!--            JOIN HOSPITAL.PATIENT_USER pu ON pc."user_id" = pu."id"-->
+<!--        WHERE vd."id" = ${diagnoseId}-->
+<!--    </select>-->
+</mapper>

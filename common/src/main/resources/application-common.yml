@@ -1,0 +1,22 @@
+tencent:
+  cloud:
+    appId: ${TENCENT_CLOUD_APP_ID:}
+    secretId: ${TENCENT_CLOUD_SECRET_ID:}
+    secretKey: ${TENCENT_CLOUD_SECRET_KEY:}
+    region-public: ${TENCENT_COS_PUBLIC_REGION:}
+    bucket-public: ${TENCENT_COS_PUBLIC_BUCKET:}
+    region-private: ${TENCENT_COS_PRIVATE_REGION:}
+    bucket-private: ${TENCENT_COS_PRIVATE_BUCKET:}
+
+wechat:
+  app-id: ${WECHAT_APP_ID:}
+  app-secret: ${WECHAT_APP_SECRET:}
+  mch-id: ${WECHAT_MCH_ID:}
+  key: ${WECHAT_MCH_KEY:}
+  cert-path: ${WECHAT_CERT_PATH:}
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:}
+  secret-key: ${MINIO_SECRET_KEY:}
+  bucket-name: ${MINIO_BUCKET:hospital}

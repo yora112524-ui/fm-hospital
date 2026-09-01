@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.hms.dao.DoctorConsultationReportDao">
+
+    <insert id="insert" parameterType="com.hospital.hms.pojo.DoctorConsultationReport">
+        INSERT INTO doctor_consultation_report (
+            uuid, patient_card_id, diagnosis, sub_dept_id, doctor_id, registration_id, rp
+        )
+        VALUES (
+                #{uuid}, #{patientCardId}, #{diagnosis}, #{subDeptId}, #{doctorId}, #{registrationId}, #{rp}
+               );
+    </insert>
+
+    <!--  根据挂号单ID和患者ID查询患者的电子处方 -->
+    <select id="selectConsultationReportByRegistrationId" parameterType="Map" resultType="HashMap">
+        SELECT  dp.uuid AS uuid,
+                ds.name AS deptSub,
+                dp.diagnosis AS diagnosis,
+                dp.prescription AS rp,
+                pc.name AS patientName,
+                pc.sex AS patientSex,
+                DATE_FORMAT(pc.birthday, '%Y-%m-%d') AS patientBirthday,
+                d.name AS doctorName
+        FROM doctor_consultation_report dp
+        JOIN doctor d ON d.id = dp.doctor_id
+        JOIN patient_user_info pc ON pc.id = dp.patient_card_id
+        JOIN medical_dept_sub ds ON ds.id = dp.sub_dept_id
+        WHERE dp.registration_id = #{registrationId}
+        <if test="userId != null">
+            AND pc.user_id = #{userId}
+        </if>
+    </select>
+
+
+</mapper>

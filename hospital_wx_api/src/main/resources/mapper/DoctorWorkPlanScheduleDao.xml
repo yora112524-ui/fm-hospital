@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.wx.dao.DoctorWorkPlanScheduleDao">
+
+    <!--  添加出诊计划详细时间  -->
+    <insert id="insert" parameterType="com.hospital.wx.pojo.DoctorWorkPlanSchedule">
+        insert into doctor_work_plan_schedule
+            (work_plan_id,slot,maximum)
+        values (#{workPlanId}, #{slot}, #{maximum})
+    </insert>
+
+    <!--  通过门诊ID + 日期查询门诊信息  -->
+    <select id="selectScheduleByDeptSub" parameterType="Map" resultType="HashMap">
+        SELECT p.id AS workPlanId,
+               d.id AS doctorId,
+               d.name AS doctorName,
+               s.slot AS slot,
+               s.maximum AS maximum
+        FROM doctor_work_plan p
+                 JOIN doctor_work_plan_schedule s ON s.work_plan_id = p.id
+                 JOIN doctor d ON p.doctor_id = d.id
+        WHERE p.date = STR_TO_DATE('${date}', '%Y-%m-%d')
+          AND p.dept_sub_id = #{deptSubId}
+        ORDER BY d.id, s.slot
+    </select>
+
+    <!--  通过workPlanId查询医生出诊计划  -->
+    <select id="selectScheduleByWorkPlanId" parameterType="int" resultType="HashMap">
+        SELECT p.doctor_id AS doctorId,
+               s.id AS scheduleId,
+               s.slot AS slot,
+               s.maximum AS maximum,
+               s.num AS num,
+               DATE_FORMAT(p.date, '%Y-%m-%d') AS date
+        FROM doctor_work_plan p
+                 JOIN doctor_work_plan_schedule s ON s.work_plan_id = p.id
+        WHERE p.id = #{workPlanId}
+    </select>
+
+    <!--  查询选中时段的总挂号人数  -->
+    <select id="selectSumNumByIds" resultType="long">
+        SELECT SUM(num) FROM doctor_work_plan_schedule
+        WHERE id IN
+        <foreach collection="list" open="(" item="one" separator="," close=")">
+            ${one}
+        </foreach>
+    </select>
+
+    <!--  删除时段  -->
+    <delete id="deleteByIds">
+        DELETE FROM doctor_work_plan_schedule
+        WHERE id IN
+        <foreach collection="list" open="(" item="one" separator="," close=")">
+            ${one}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByWorkPlanId" parameterType="int">
+        DELETE FROM doctor_work_plan_schedule
+        WHERE work_plan_id = ${workPlanId}
+    </delete>
+
+    <select id="selectDoctorWorkPlanSchedule" parameterType="Map" resultType="HashMap">
+        SELECT p.id AS workPlanId,
+               s.id AS scheduleId,
+               s.slot AS slot,
+               s.maximum AS maximum,
+               s.num AS num
+        FROM doctor_work_plan p
+                 JOIN doctor_work_plan_schedule s ON p.id = s.work_plan_id
+        WHERE p.date = STR_TO_DATE('${date}', '%Y-%m-%d')
+          AND p.doctor_id = #{doctorId}
+        ORDER BY s.id
+    </select>
+
+    <!--  更新该时段挂号人数  -->
+    <update id="updateNumById" parameterType="Map">
+        UPDATE doctor_work_plan_schedule
+        SET num = num + #{n}
+        where id = #{id}
+    </update>
+
+    <!--  挂号失败释放挂号锁定人数  -->
+    <update id="releaseRegistrationLock" parameterType="String">
+        UPDATE doctor_work_plan_schedule p
+            JOIN medical_registration r ON r.doctor_schedule_id = p.id
+            SET p.num = p.num - 1
+        WHERE r.out_trade_no = #{outTradeNo}
+    </update>
+
+
+</mapper>

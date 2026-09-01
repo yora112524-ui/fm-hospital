@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.hms.dao.MedicalDeptSubDao">
+
+        <select id="selectConditionByPage" parameterType="Map" resultType="HashMap">
+            SELECT
+            ds.id AS id,
+            ds.name AS subName,
+            d.name AS deptName,
+            ds.location AS location,
+            t1.count AS doctors,
+            t2.count AS masterDoctors,
+            t3.count AS generalDoctors
+            FROM medical_dept_sub ds
+            JOIN medical_dept d ON ds.dept_id = d.id
+            JOIN (
+            SELECT ds.id,
+            COUNT(sd.id) AS count
+            FROM medical_dept_sub ds
+            LEFT JOIN medical_dept_sub_doctor sd ON sd.dept_sub_id = ds.id
+            LEFT JOIN doctor d ON sd.doctor_id = d.id AND d.status = 1
+            GROUP BY ds.id
+            ) t1 ON t1.id = ds.id
+            LEFT JOIN (
+            SELECT ds.id,
+            COUNT(d.id) AS count
+            FROM medical_dept_sub ds
+            LEFT JOIN medical_dept_sub_doctor sd ON sd.dept_sub_id = ds.id
+            LEFT JOIN doctor d ON d.id = sd.doctor_id AND d.job IN ('主任医师','副主任医师')
+            GROUP BY ds.id
+            ) t2 ON t2.id = ds.id
+            LEFT JOIN (
+            SELECT ds.id,
+            COUNT(d.id) AS count
+            FROM medical_dept_sub ds
+            LEFT JOIN medical_dept_sub_doctor sd ON sd.dept_sub_id = ds.id
+            LEFT JOIN doctor d ON d.id = sd.doctor_id AND d.job NOT IN ('主任医师','副主任医师')
+            GROUP BY ds.id
+            ) t3 ON t3.id = ds.id
+            WHERE 1 = 1
+            <if test="name!=null">
+                AND ds.name LIKE '%${name}%'
+            </if>
+            <if test="deptId!=null">
+                AND d.id = #{deptId}
+            </if>
+            <if test="order!=null">
+                ORDER BY d.id #{order}
+            </if>
+            LIMIT ${length} OFFSET ${start}
+        </select>
+
+        <select id="selectConditionByPageCount" parameterType="Map" resultType="long">
+            SELECT COUNT(1)
+            FROM medical_dept_sub ds
+            JOIN medical_dept d ON ds.dept_id = d.id
+            WHERE 1 = 1
+            <if test="name!=null">
+                AND ds.name LIKE '%${name}%'
+            </if>
+            <if test="deptId!=null">
+                AND d.id = #{deptId}
+            </if>
+        </select>
+
+        <!--  添加诊室  -->
+        <insert id="insert" parameterType="com.hospital.hms.pojo.MedicalDeptSub">
+            insert into medical_dept_sub
+                (`name`, dept_id, location)
+            values
+                (#{name}, #{deptId}, #{location})
+        </insert>
+
+
+        <select id="selectById" parameterType="int" resultType="HashMap">
+            SELECT `name`,
+                   dept_id as "deptId",
+                   location
+            FROM medical_dept_sub
+            WHERE id = #{id}
+        </select>
+
+        <update id="update" parameterType="com.hospital.hms.pojo.MedicalDeptSub">
+            update medical_dept_sub
+            set `name` = #{name},
+                dept_id = #{deptId},
+                location = #{location}
+            where id = #{id}
+        </update>
+
+
+    <select id="selectIncludeDoctorCount" resultType="long">
+        SELECT COUNT(1)
+        FROM medical_dept_sub ds
+        JOIN medical_dept_sub_doctor sd ON sd.dept_sub_id = ds.id
+        WHERE ds.id IN
+        <foreach collection="array" open="(" item="one" separator="," close=")">
+            ${one}
+        </foreach>
+    </select>
+
+    <delete id="deleteByIds">
+        DELETE FROM medical_dept_sub
+        WHERE id IN
+        <foreach collection="array" open="(" item="one" separator="," close=")">
+            ${one}
+        </foreach>
+    </delete>
+
+    <!--  移动端接口  -->
+    <select id="selectMedicalDeptSubList" parameterType="int" resultType="HashMap">
+        SELECT id, `name`
+        FROM medical_dept_sub
+        WHERE dept_id = ${deptId}
+    </select>
+
+</mapper>

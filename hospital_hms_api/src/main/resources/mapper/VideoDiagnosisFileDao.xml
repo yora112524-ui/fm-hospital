@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.hms.dao.VideoDiagnosisFileDao">
+
+
+    <select id="selectImageByVideoDiagnoseId" parameterType="int" resultType="HashMap">
+        SELECT filename,
+               `path`
+        FROM patient_video_diagnosis_files
+        WHERE video_diagnose_id = #{videoDiagnoseId}
+        ORDER BY id ASC
+    </select>
+
+
+    <insert id="insert" parameterType="com.hospital.hms.pojo.VideoDiagnoseFile">
+        INSERT INTO patient_video_diagnosis_files (
+            id, video_diagnose_id, filename, `path`, create_time
+        )
+        VALUES (
+                   NULL,  -- 自动递增的主键值，设置为 NULL 或者可以省略该列
+                   #{videoDiagnoseId}, #{filename}, #{path}, NOW()
+               )
+    </insert>
+
+    <select id="selectVideoDiagnoseImage" parameterType="int" resultType="String">
+        SELECT filename
+        FROM patient_video_diagnosis_files
+        WHERE video_diagnose_id = #{videoDiagnoseId}
+    </select>
+
+    <delete id="delete" parameterType="Map">
+        DELETE FROM patient_video_diagnosis_files
+        WHERE video_diagnose_id = #{videoDiagnoseId}
+        <if test="filename != null">
+            AND filename = #{filename}
+        </if>
+    </delete>
+
+</mapper>

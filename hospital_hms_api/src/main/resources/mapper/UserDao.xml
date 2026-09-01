@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.hms.dao.UserDao">
+
+
+    <select id="login" parameterType="hashmap" resultType="Integer">
+        select id
+        from users
+        where username = #{username}
+          and password = #{password}
+    </select>
+
+
+    <select id="selectUserPrivileges" parameterType="int" resultType="String">
+        SELECT DISTINCT p.permission_name
+        FROM users u
+                 JOIN role r ON JSON_CONTAINS(u.role, CAST(r.id AS CHAR))
+                 JOIN permission p ON JSON_CONTAINS(r.permissions, CAST(p.id AS CHAR))
+        WHERE u.id = #{userId}
+          AND u.status = 1
+    </select>
+
+<!--    <select id="login" parameterType="hashmap" resultType="Integer">-->
+<!--        select id-->
+<!--        from  users-->
+<!--        where username = #{username}-->
+<!--            and password = #{password}-->
+<!--    </select>-->
+
+<!--    <select id="selectUserPrivileges" parameterType="int" resultType="String">-->
+<!--        SELECT DISTINCT p.permission_name-->
+<!--        FROM  users u-->
+<!--                 JOIN role r ON JSON_CONTAINS(u.role, CAST(r.id AS CHAR))-->
+<!--                 JOIN bw_zzy_permission p ON JSON_CONTAINS(r.permissions, CAST(p.id AS CHAR))-->
+<!--        WHERE u.id = #{userId}-->
+<!--          AND u.status = 1-->
+<!--    </select>-->
+
+    <select id="selectRefIdIdAndJobById" parameterType="int" resultType="HashMap" >
+        SELECT job,
+               ref_id AS refId
+        FROM  users
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectUserIdByRefId" parameterType="HashMap" resultType="Integer">
+        SELECT `id`
+        FROM  users
+        WHERE `ref_id` = #{refId}
+          AND `job` = #{job}
+    </select>
+
+    <update id="updateUserPassword" parameterType="HashMap">
+        UPDATE users
+        SET password = MD5(CONCAT(
+                SUBSTRING(MD5(username), 1, 6),
+                #{newPassword},
+                SUBSTRING(MD5(username), LENGTH(MD5(username)) - 2, 3)
+            ))
+        WHERE id = #{userId}
+          AND password = MD5(CONCAT(
+                SUBSTRING(MD5(username), 1, 6),
+                #{oldPassword},
+                SUBSTRING(MD5(username), LENGTH(MD5(username)) - 2, 3)
+            ))
+    </update>
+
+    <select id="selectUserDetails" parameterType="int" resultType="HashMap">
+        SELECT u.name, u.photo, d.dept_name AS deptName
+        FROM  users u LEFT JOIN dept d ON u.dept_id=d.id
+        WHERE u.id=#{userId} AND u.status=1
+    </select>
+
+    <select id="selectUserByCondition" parameterType="HashMap" resultType="HashMap">
+        SELECT DISTINCT u.id,
+            u.name,
+            u.sex,
+            u.tel,
+            u.email,
+            d.dept_name AS dept,
+            u.hiredate,
+            u.root,
+            u.status,
+            (
+                SELECT GROUP_CONCAT( role_name separator "，" ) FROM role
+                WHERE JSON_CONTAINS ( u.role, CONVERT ( id, CHAR ) )
+            ) AS roles
+            FROM  users u
+            JOIN role r ON JSON_CONTAINS ( u.role, CONVERT ( r.id, CHAR ) )
+            LEFT JOIN dept d ON u.dept_id = d.id
+            WHERE 1=1
+            <if test="name != null and name !=''">
+                AND u.name LIKE "%${name}%"
+            </if>
+            <if test="sex != null and sex !=''">
+                AND u.sex = #{sex}
+            </if>
+            <if test="role != null and role !=''">
+                AND r.role_name = #{role}
+            </if>
+            <if test="deptId != null and deptId !=''">
+                AND d.id = #{deptId}
+            </if>
+            <if test="status != null and status !=''">
+                AND u.status = #{status}
+            </if>
+            LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectUserByConditionCount" parameterType="HashMap" resultType="long">
+        SELECT count(distinct u.id)
+        FROM  users u
+        JOIN role r ON JSON_CONTAINS ( u.role, CONVERT ( r.id, CHAR ) )
+        LEFT JOIN dept d ON u.dept_id = d.id
+        WHERE 1=1
+        <if test="name != null and name !=''">
+            AND u.name LIKE "%${name}%"
+        </if>
+        <if test="sex != null and sex !=''">
+            AND u.sex=#{sex}
+        </if>
+        <if test="role != null and role !=''">
+            AND r.role_name=#{role}
+        </if>
+        <if test="deptId != null and deptId !=''">
+            AND d.id=#{deptId}
+        </if>
+        <if test="status != null and status !=''">
+            AND u.status=#{status}
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="com.hospital.hms.pojo.User">
+        INSERT INTO users
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="username!=null">
+                username = #{username},
+            </if>
+            <if test="password!=null">
+                password = #{password},
+            </if>
+            <if test="name!=null">
+                `name` = #{name},
+            </if>
+            <if test="sex!=null">
+                sex = #{sex},
+            </if>
+            <if test="tel!=null">
+                tel = #{tel},
+            </if>
+            <if test="email!=null">
+                email = #{email},
+            </if>
+            <if test="hiredate!=null">
+                hiredate = #{hiredate},
+            </if>
+            <if test="root!=null">
+                root = 0,
+            </if>
+            <if test="deptId!=null">
+                dept_id = #{deptId},
+            </if>
+            <if test="role!=null">
+                role = #{role},
+            </if>
+            <if test="status!=null">
+                status = #{status},
+            </if>
+        </trim>
+    </insert>
+
+
+    <update id="update" parameterType="HashMap">
+        UPDATE  users
+        SET
+        <if test="username!=null and password!=null">
+            username = #{username},
+            password = HEX(AES_ENCRYPT(#{password},#{username})),
+        </if>
+        <if test="name!=null">
+            name = #{name},
+        </if>
+        <if test="sex!=null">
+            sex = #{sex},
+        </if>
+        <if test="tel!=null">
+            tel = #{tel},
+        </if>
+        <if test="email!=null">
+            email = #{email},
+        </if>
+        <if test="hiredate!=null">
+            hiredate = #{hiredate},
+        </if>
+        <if test="role!=null">
+            role = #{role},
+        </if>
+        <if test="root!=null">
+            root = #{root},
+        </if>
+        <if test="deptId!=null">
+            dept_id = #{deptId},
+        </if>
+        <if test="status!=null">
+            status = #{status},
+        </if>
+        id=id
+        WHERE id=#{userId}
+    </update>
+
+    <delete id="deleteUserByIds">
+        DELETE FROM  users
+        WHERE id IN
+        <foreach collection="array" open="(" separator="," close=")" item="one">
+            #{one}
+        </foreach>
+    </delete>
+
+    <select id="selectById" parameterType="int" resultType="HashMap">
+        SELECT id, username, name, sex, tel, email, hiredate, role, dept_id AS deptId, status,
+               AES_DECRYPT(UNHEX(password),username) AS password
+        FROM  users
+        WHERE id=#{userId}
+    </select>
+
+    <select id="selectAllUser" resultType="HashMap">
+        SELECT id,`name`
+        FROM  users
+        WHERE status = 1
+    </select>
+</mapper>

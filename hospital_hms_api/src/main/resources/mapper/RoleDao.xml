@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hospital.hms.dao.RoleDao">
+
+    <select id="selectAllRole" resultType="HashMap">
+        SELECT id,
+               role_name AS roleName
+        FROM `role` ORDER BY id
+    </select>
+
+    <select id="selectById" parameterType="int" resultType="HashMap">
+        SELECT id,role_name AS roleName,permissions,`desc`,default_permissions AS defaultPermissions
+        FROM `role`
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectRoleByCondition" parameterType="HashMap" resultType="HashMap">
+        SELECT
+        r.id,
+        r.role_name AS roleName,
+        COUNT( u.id ) AS users,
+        JSON_LENGTH ( r.permissions ) AS permissions,
+        r.`desc`,
+        r.systemic
+        FROM role r
+        LEFT JOIN users u ON JSON_CONTAINS ( u.role, CONVERT ( r.id, CHAR ) )
+        WHERE 1=1
+        <if test="roleName!=null and roleName!=''">
+            AND r.role_name LIKE '%${roleName}%'
+        </if>
+        GROUP BY r.id
+        ORDER BY r.id
+        LIMIT #{start}, #{length}
+    </select>
+
+    <select id="selectRoleByConditionCount" parameterType="HashMap" resultType="long">
+        SELECT COUNT(*) FROM (
+        SELECT r.id
+        FROM role r
+        LEFT JOIN users u ON JSON_CONTAINS ( u.role, CONVERT ( r.id, CHAR ) )
+        WHERE 1=1
+        <if test="roleName!=null and roleName!=''">
+            AND r.role_name LIKE '%${roleName}%'
+        </if>
+        GROUP BY r.id
+        ) AS temp
+    </select>
+
+    <select id="selectUserByRoleId" parameterType="int" resultType="int">
+        SELECT u.id
+        FROM role r
+                 JOIN users u ON JSON_CONTAINS ( u.role, CONVERT ( r.id, CHAR ) )
+        WHERE r.id=#{id}
+    </select>
+
+    <select id="selectCanDelete" resultType="boolean">
+        SELECT IF( SUM( temp.users ) > 0, FALSE, TRUE ) AS result FROM (
+        SELECT COUNT( u.id ) AS users
+        FROM role r
+        JOIN users u ON JSON_CONTAINS ( u.role, CONVERT ( r.id, CHAR ) )
+        WHERE r.id IN
+        <foreach collection="array" open="(" separator="," close=")" item="one">
+            #{one}
+        </foreach>
+        GROUP BY r.id
+        ) temp
+    </select>
+
+    <insert id="insert" parameterType="com.hospital.hms.pojo.Role">
+        INSERT INTO role
+        SET role_name=#{roleName},
+        permissions=#{permissions}
+        <if test="desc!=null">
+            ,`desc`=#{desc}
+        </if>
+    </insert>
+
+    <update id="update" parameterType="com.hospital.hms.pojo.Role">
+        UPDATE role
+        SET role_name=#{roleName},
+            `desc`=#{desc},
+            permissions=#{permissions}
+        WHERE id=#{id} AND id!=0
+    </update>
+
+    <delete id="deleteRoleByIds">
+        DELETE FROM role
+        WHERE id IN
+        <foreach collection="array" open="(" separator="," close=")" item="one">
+            #{one}
+        </foreach>
+        AND systemic=FALSE
+    </delete>
+</mapper>
