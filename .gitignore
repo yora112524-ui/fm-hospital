@@ -33,6 +33,7 @@ build/
 ### Secrets and local configuration ###
 **/*.p12
 **/src/main/resources/dev/
+**/project.private.config.json
 
 ### Runtime files ###
 *.log

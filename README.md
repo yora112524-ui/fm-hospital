@@ -1,6 +1,6 @@
 # FM Hospital - 智慧医院预约挂号与远程问诊平台
 
-基于 Spring Boot 的智慧医院后端项目，采用 Maven 多模块架构拆分公共组件、医院管理端 API 与患者微信端 API，覆盖科室医生管理、医生排班、患者档案、预约挂号、人脸核验及视频问诊等业务。
+智慧医院全栈项目，包含 Spring Boot 后端、医院管理网站前端和患者微信小程序前端，覆盖科室医生管理、医生排班、患者档案、预约挂号、人脸核验及视频问诊等业务。
 
 ## 技术栈
 
@@ -10,6 +10,8 @@
 - WebSocket、Quartz、RabbitMQ
 - MinIO、腾讯云 IAI / TRTC
 - Maven、SpringDoc、Validation
+- Vue 3、Vite、Element Plus
+- uni-app、uView、微信小程序
 
 ## 项目模块
 
@@ -17,7 +19,9 @@
 fm_hospital
 ├── common             公共响应、分页、异常及工具类
 ├── hospital_hms_api   医院管理端 API（默认端口 9091）
-└── hospital_wx_api    患者微信端 API（默认端口 9092）
+├── hospital_wx_api    患者微信端 API（默认端口 9092）
+├── fm_hospital_hms    医院管理网站前端
+└── fm_hospital_wx     患者微信小程序前端
 ```
 
 ## 核心功能
@@ -71,6 +75,18 @@ mvn clean package -DskipTests
 ```
 
 5. 分别启动 `HmsApiApplication` 和 `WxApplication`。
+
+### 医院管理网站前端
+
+```bash
+cd fm_hospital_hms
+npm install
+npm run dev
+```
+
+### 微信小程序前端
+
+使用 HBuilderX 打开 `fm_hospital_wx`，选择“运行到小程序模拟器 → 微信开发者工具”。
 
 ## 说明
 
