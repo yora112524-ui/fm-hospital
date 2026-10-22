@@ -116,6 +116,6 @@ tencent:
       groupName: ${TENCENT_FACE_GROUP:hospital}
       region: ${TENCENT_FACE_REGION:ap-guangzhou}
   trtc:
-    appId: ${TENCENT_TRTC_APP_ID:}
+    appId: ${TENCENT_TRTC_APP_ID:0}
     secretKey: ${TENCENT_TRTC_SECRET_KEY:}
     expire: 86400
