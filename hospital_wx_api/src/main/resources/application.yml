@@ -15,8 +15,8 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
-      driver-class-name: com.mysql.jdbc.Driver
-      url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:fm_hospital}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:fm_hospital}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true
       username: ${DB_USERNAME:root}
       password: ${DB_PASSWORD:}
       initial-size: 2
@@ -102,6 +102,6 @@ tencent:
       groupName: ${TENCENT_FACE_GROUP:hospital}
       region: ${TENCENT_FACE_REGION:ap-guangzhou}
   trtc:
-    appId: ${TENCENT_TRTC_APP_ID:}
+    appId: ${TENCENT_TRTC_APP_ID:0}
     secretKey: ${TENCENT_TRTC_SECRET_KEY:}
     expire: 86400
